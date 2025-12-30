@@ -6,8 +6,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body { font-family: Arial; max-width: 600px; margin: auto; padding: 20px; }
-    input, textarea, button { width: 100%; padding: 10px; margin-top: 10px; }
-    button { background: black; color: white; border: none; cursor: pointer; }
+    input, textarea, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+    button {
+      background: black;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #status {
+      margin-top: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -18,8 +32,8 @@
   <input id="email" placeholder="Email" />
   <input id="company" placeholder="Company" />
   <textarea id="message" placeholder="Message"></textarea>
-  <button id="submitBtn">Submit Lead</button>
 
+  <button id="submitBtn">Submit Lead</button>
   <p id="status"></p>
 
   <script type="module">
@@ -31,4 +45,50 @@
       authDomain: "leadflow-crm-217fd.firebaseapp.com",
       projectId: "leadflow-crm-217fd",
       storageBucket: "leadflow-crm-217fd.firebasestorage.app",
-      messaging
+      messagingSenderId: "409403849120",
+      appId: "1:409403849120:web:3c4f1c6f1673a5edff0cc5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const btn = document.getElementById("submitBtn");
+    const status = document.getElementById("status");
+
+    btn.addEventListener("click", async () => {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const company = document.getElementById("company").value.trim();
+      const message = document.getElementById("message").value.trim();
+
+      if (!name || !email || !company || !message) {
+        status.textContent = "❌ Please fill in all fields.";
+        return;
+      }
+
+      status.textContent = "Submitting...";
+
+      try {
+        await addDoc(collection(db, "leads"), {
+          name,
+          email,
+          company,
+          message,
+          stage: "New",
+          createdAt: serverTimestamp()
+        });
+
+        status.textContent = "✅ Lead submitted successfully!";
+        document.getElementById("name").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("company").value = "";
+        document.getElementById("message").value = "";
+      } catch (err) {
+        console.error(err);
+        status.textContent = "❌ Error submitting lead.";
+      }
+    });
+  </script>
+
+</body>
+</html>
