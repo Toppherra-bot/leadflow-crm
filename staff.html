@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LeadFlow CRM — Staff Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; max-width: 1100px; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 14px; margin-top: 14px; }
+    .top { display:flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+    .muted { color:#666; }
+    .hidden { display:none; }
+    table { width:100%; border-collapse: collapse; margin-top: 12px; }
+    th, td { border-bottom: 1px solid #eee; padding: 10px; vertical-align: top; }
+    th { text-align:left; background:#fafafa; }
+    select, input { padding: 8px; border:1px solid #ccc; border-radius: 10px; width: 100%; }
+    button { padding: 9px 12px; border:0; border-radius: 10px; cursor:pointer; }
+    code { background:#f2f2f2; padding:2px 6px; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div>
+      <h1>LeadFlow CRM — Staff</h1>
+      <p class="muted">Live view & updates (real-time Firestore listener).</p>
+      <p class="muted"><b>Marker login:</b> Username <code>marker</code> / Password <code>LeadFlow2025!</code></p>
+    </div>
+  </div>
+
+  <!-- Simple access gate (for marking access) -->
+  <div id="loginCard" class="card">
+    <h3>Staff Access</h3>
+    <p class="muted">Use the marker credentials shown above.</p>
+    <label>Username</label>
+    <input id="u" placeholder="marker" />
+    <label>Password</label>
+    <input id="p" type="password" placeholder="LeadFlow2025!" />
+    <button id="loginBtn">Log in</button>
+    <p id="loginMsg" class="muted"></p>
+  </div>
+
+  <div id="app" class="hidden">
+    <div class="card">
+      <div class="muted">Records update live — no refresh required.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Lead</th>
+            <th>Stage</th>
+            <th>Notes</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getFirestore, collection, query, orderBy, onSnapshot,
+      doc, updateDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDI-Jr7R29AjADgvf4K2UbkfHLs5iFATpQ",
+      authDomain: "leadflow-crm-217fd.firebaseapp.com",
+      projectId: "leadflow-crm-217fd",
+      storageBucket: "leadflow-crm-217fd.firebasestorage.app",
+      messagingSenderId: "409403849120",
+      appId: "1:409403849120:web:3c4f1c6f1673a5edff0cc5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Simple login gate (not secure, but OK for marker access requirement)
+    const LOGIN = { user: "marker", pass: "LeadFlow2025!" };
+
+    const loginCard = document.getElementById("loginCard");
+    const appDiv = document.getElementById("app");
+    const loginMsg = document.getElementById("loginMsg");
+
+    document.getElementById("loginBtn").addEventListener("click", () => {
+      const u = document.getElementById("u").value.trim();
+      const p = document.getElementById("p").value;
+      if (u === LOGIN.user && p === LOGIN.pass) {
+        loginCard.classList.add("hidden");
+        appDiv.classList.remove("hidden");
+        startRealtime();
+      } else {
+        loginMsg.textContent = "Invalid credentials. Use the marker login shown above.";
+      }
+    });
+
+    const rows = document.getElementById("rows");
+    const STAGES = ["New","Contacted","Qualified","Proposal","Won","Lost"];
+
+    function esc(s){ return String(s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+    function render(leads) {
+      rows.innerHTML = leads.map(l => `
+        <tr>
+          <td>
+            <div><b>${esc(l.name)}</b></div>
+            <div class="muted">${esc(l.email)} — ${esc(l.company)}</div>
+            <div class="muted">${esc(l.message)}</div>
+          </td>
+          <td>
+            <select class="stage" data-id="${l.id}">
+              ${STAGES.map(s => `<option ${l.stage===s?"selected":""}>${s}</option>`).join("")}
+            </select>
+          </td>
+          <td>
+            <input class="notes" data-id="${l.id}" value="${esc(l.notes || "")}" placeholder="Internal notes..." />
+          </td>
+          <td>
+            <button class="save" data-id="${l.id}">Save</button>
+          </td>
+        </tr>
+      `).join("");
+
+      document.querySelectorAll(".save").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const id = btn.getAttribute("data-id");
+          const stage = document.querySelector(`.stage[data-id="${id}"]`).value;
+          const notes = document.querySelector(`.notes[data-id="${id}"]`).value.trim();
+
+          await updateDoc(doc(db, "leads", id), {
+            stage,
+            notes,
+            updatedAt: serverTimestamp()
+          });
+        });
+      });
+    }
+
+    function startRealtime() {
+      const q = query(collection(db, "leads"), orderBy("createdAt", "desc"));
+      onSnapshot(q, (snap) => {
+        const leads = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        render(leads);
+      });
+    }
+  </script>
+</body>
+</html>
