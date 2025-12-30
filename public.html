@@ -23,65 +23,36 @@
   <p id="status"></p>
 
   <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDI-Jr7R29AjADgvf4K2UbkfHLs5iFATpQ",
-    authDomain: "leadflow-crm-217fd.firebaseapp.com",
-    projectId: "leadflow-crm-217fd",
-    storageBucket: "leadflow-crm-217fd.firebasestorage.app",
-    messagingSenderId: "409403849120",
-    appId: "1:409403849120:web:3c4f1c6f1673a5edff0cc5"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDI-Jr7R29AjADgvf4K2UbkfHLs5iFATpQ",
+      authDomain: "leadflow-crm-217fd.firebaseapp.com",
+      projectId: "leadflow-crm-217fd",
+      storageBucket: "leadflow-crm-217fd.firebasestorage.app",
+      messagingSenderId: "409403849120",
+      appId: "1:409403849120:web:3c4f1c6f1673a5edff0cc5"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  const statusEl = document.getElementById("status");
-  const btn = document.getElementById("submitBtn");
+    const statusEl = document.getElementById("status");
+    const btn = document.getElementById("submitBtn");
 
-  btn.addEventListener("click", async () => {
-    const name = document.getElementById("name").value.trim();
-    const email = document.getElementById("email").value.trim();
-    const company = document.getElementById("company").value.trim();
-    const message = document.getElementById("message").value.trim();
+    btn.addEventListener("click", async () => {
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const company = document.getElementById("company").value.trim();
+      const message = document.getElementById("message").value.trim();
 
-    if (!name || !email || !company || !message) {
-      statusEl.innerText = "❌ Please fill all fields.";
-      return;
-    }
+      if (!name || !email || !company || !message) {
+        statusEl.innerText = "❌ Please fill all fields.";
+        return;
+      }
 
-    statusEl.innerText = "Submitting...";
-
-    try {
-      await addDoc(collection(db, "leads"), {
-        name,
-        email,
-        company,
-        message,
-        stage: "New",
-        createdAt: serverTimestamp()
-      });
-
-      statusEl.innerText = "✅ Lead submitted!";
-      document.getElementById("name").value = "";
-      document.getElementById("email").value = "";
-      document.getElementById("company").value = "";
-      document.getElementById("message").value = "";
-    } catch (err) {
-      console.error(err);
-      statusEl.innerText = "❌ Error submitting lead (check Firestore rules).";
-    }
-  });
-</script>
-
-
-    async function submitLead() {
-      const name = document.getElementById("name").value;
-      const email = document.getElementById("email").value;
-      const company = document.getElementById("company").value;
-      const message = document.getElementById("message").value;
+      statusEl.innerText = "Submitting...";
 
       try {
         await addDoc(collection(db, "leads"), {
@@ -93,12 +64,16 @@
           createdAt: serverTimestamp()
         });
 
-        document.getElementById("status").innerText = "✅ Lead submitted!";
+        statusEl.innerText = "✅ Lead submitted!";
+        document.getElementById("name").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("company").value = "";
+        document.getElementById("message").value = "";
       } catch (err) {
-        document.getElementById("status").innerText = "❌ Error submitting lead";
         console.error(err);
+        statusEl.innerText = "❌ Error submitting lead (check Firestore rules).";
       }
-    }
+    });
   </script>
 
 </body>
