@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>LeadFlow CRM — Insights</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 24px;
+      max-width: 1000px;
+    }
+    .muted {
+      color: #666;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .big {
+      font-size: 2.2rem;
+      font-weight: bold;
+    }
+    ul {
+      margin-top: 10px;
+      padding-left: 20px;
+    }
+    a {
+      text-decoration: none;
+      color: black;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>LeadFlow CRM — Insights</h1>
+  <p class="muted">Live operational dashboard (updates automatically).</p>
+
+  <p class="muted">
+    Quick links:
+    <a href="public.html">Public</a> •
+    <a href="staff.html">Staff</a>
+  </p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="muted">Total leads</div>
+      <div id="total" class="big">0</div>
+    </div>
+
+    <div class="card">
+      <div class="muted">Leads in last 24 hours</div>
+      <div id="last24" class="big">0</div>
+    </div>
+
+    <div class="card">
+      <div class="muted">Open leads</div>
+      <div id="open" class="big">0</div>
+    </div>
+
+    <div class="card">
+      <div class="muted">Conversion rate</div>
+      <div id="conversion" class="big">0%</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="muted">Stage distribution</div>
+    <ul id="stages"></ul>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDI-Jr7R29AjADgvf4K2UbkfHLs5iFATpQ",
+      authDomain: "leadflow-crm-217fd.firebaseapp.com",
+      projectId: "leadflow-crm-217fd",
+      storageBucket: "leadflow-crm-217fd.firebasestorage.app",
+      messagingSenderId: "409403849120",
+      appId: "1:409403849120:web:3c4f1c6f1673a5edff0cc5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const totalEl = document.getElementById("total");
+    const last24El = document.getElementById("last24");
+    const openEl = document.getElementById("open");
+    const convEl = document.getElementById("conversion");
+    const stagesEl = document.getElementById("stages");
+
+    const STAGES = ["New", "Contacted", "Qualified", "Proposal", "Won", "Lost"];
+
+    onSnapshot(collection(db, "leads"), (snapshot) => {
+      const leads = snapshot.docs.map(doc => doc.data());
+      const total = leads.length;
+
+      const now = Date.now();
+      const last24 = leads.filter(l => {
+        const ts = l.createdAt?.toDate ? l.createdAt.toDate().getTime() : 0;
+        return ts && (now - ts <= 24 * 60 * 60 * 1000);
+      }).length;
+
+      const won = leads.filter(l => l.stage === "Won").length;
+      const lost = leads.filter(l => l.stage === "Lost").length;
+      const open = total - won - lost;
+      const conversion = total ? Math.round((won / total) * 100) : 0;
+
+      const stageCounts = {};
+      STAGES.forEach(s => stageCounts[s] = 0);
+      leads.forEach(l => {
+        if (stageCounts[l.stage] !== undefined) {
+          stageCounts[l.stage]++;
+        }
+      });
+
+      totalEl.textContent = total;
+      last24El.textContent = last24;
+      openEl.textContent = open;
+      convEl.textContent = conversion + "%";
+
+      stagesEl.innerHTML = STAGES
+        .map(s => `<li><strong>${s}:</strong> ${stageCounts[s]}</li>`)
+        .join("");
+    });
+  </script>
+
+</body>
+</html>
